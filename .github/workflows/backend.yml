@@ -10,6 +10,7 @@ jobs:
     runs-on: self-hosted
 
     steps:
+
       - name: Checkout backend
         uses: actions/checkout@v4
 
@@ -37,7 +38,40 @@ jobs:
             -p 5000:5000 \
             py:v1
 
+      - name: Test container
+        run: |
+          set -e
+
+          echo "Checking backend container..."
+
+          if sudo docker ps --filter "name=backend" --filter "status=running" | grep -q backend; then
+            echo "Backend container is running"
+          else
+            echo "Backend container is NOT running"
+            sudo docker ps -a
+            sudo docker logs backend
+            exit 1
+          fi
+
       - name: Test backend
         run: |
           set -e
-          curl -f http://localhost:5000/health
+
+          echo "Testing backend health endpoint..."
+
+          for i in {1..30}; do
+            if curl -f http://localhost:5000/health; then
+              echo "Backend health check passed"
+              exit 0
+            fi
+
+            echo "Backend not ready, retrying..."
+            sleep 1
+          done
+
+          echo "Backend health check failed"
+
+          sudo docker ps -a
+          sudo docker logs backend
+
+          exit 1
