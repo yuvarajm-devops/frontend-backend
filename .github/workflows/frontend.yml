@@ -1,0 +1,36 @@
+name: Frontend CI/CD
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout frontend
+        uses: actions/checkout@v4
+
+      - name: Deploy frontend
+        run: |
+          set -e
+
+          sudo rm -rf /var/www/frontend/*
+          sudo cp -r frontend/* /var/www/frontend/
+
+      - name: Test Nginx
+        run: |
+          set -e
+          sudo nginx -t
+
+      - name: Reload Nginx
+        run: |
+          set -e
+          sudo systemctl reload nginx
+
+      - name: Test frontend
+        run: |
+          set -e
+          curl -f http://localhost
