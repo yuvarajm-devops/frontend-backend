@@ -1,0 +1,45 @@
+name: Backend CI/CD
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+
+    steps:
+      - name: Checkout code
+        run: |
+          set -e
+          git fetch --all
+          git reset --hard origin/main
+
+      - name: Build Docker image
+        run: |
+          set -e
+          sudo docker build -t py:v1 .
+
+      - name: Stop old container
+        run: |
+          set -e
+          sudo docker stop backend || true
+
+      - name: Remove old container
+        run: |
+          set -e
+          sudo docker rm backend || true
+
+      - name: Start new container
+        run: |
+          set -e
+          sudo docker run -d \
+            --name backend \
+            -p 5000:5000 \
+            py:v1
+
+      - name: Test backend
+        run: |
+          set -e
+          curl http://localhost:5000/health
